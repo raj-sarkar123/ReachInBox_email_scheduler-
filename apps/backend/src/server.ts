@@ -8,6 +8,7 @@ import { startEmailWorker } from './workers/email.worker.js';
 import { emailQueue } from './queues/email.queue.js';
 import { logger } from './utils/logger.js';
 
+
 async function bootstrap() {
   logger.info('🚀 Starting ReachInbox Email Scheduler Backend Service...');
 
@@ -40,16 +41,17 @@ async function bootstrap() {
 
   // 4. Start HTTP Express Server
   const app = createApp();
-  const server = app.listen(config.port, () => {
-    logger.info(`=======================================================`);
-    logger.info(`✅ Server listening on http://localhost:${config.port}`);
-    logger.info(`📊 BullMQ Board UI: http://localhost:${config.port}/admin/queues`);
-    logger.info(`🔍 API Health Check: http://localhost:${config.port}/api/health`);
-    logger.info(`⚙️  Worker Concurrency: ${config.scheduler.workerConcurrency}`);
-    logger.info(`⏱️  Min Delay Between Sends: ${config.scheduler.emailMinDelaySeconds}s`);
-    logger.info(`=======================================================`);
-  });
+const port = Number(process.env.PORT) || config.port;
 
+const server = app.listen(port, '0.0.0.0', () => {
+  logger.info(`=======================================================`);
+  logger.info(`✅ Server listening on 0.0.0.0:${port}`);
+  logger.info(`📊 BullMQ Board UI: /admin/queues`);
+  logger.info(`🔍 API Health Check: /api/health`);
+  logger.info(`⚙️  Worker Concurrency: ${config.scheduler.workerConcurrency}`);
+  logger.info(`⏱️  Min Delay Between Sends: ${config.scheduler.emailMinDelaySeconds}s`);
+  logger.info(`=======================================================`);
+});
   // Graceful Shutdown
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}. Shutting down gracefully...`);

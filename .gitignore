@@ -1,0 +1,94 @@
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+**/node_modules/
+
+# ==========================================
+# Environment variables / Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# Next.js
+# ==========================================
+.next/
+out/
+
+# ==========================================
+# Build / compiled files
+# ==========================================
+dist/
+build/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# ==========================================
+# Logs
+# ==========================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# OS generated files
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# IDE / Editor
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==========================================
+# Temporary files
+# ==========================================
+*.tmp
+*.temp
+*.bak
+
+# ==========================================
+# Prisma generated files
+# ==========================================
+# Uncomment if you generate Prisma client
+# apps/backend/node_modules/.prisma/
+# apps/backend/node_modules/@prisma/client/
+
+# ==========================================
+# Testing
+# ==========================================
+.nyc_output/
+jest-results/
+playwright-report/
+test-results/
+
+# ==========================================
+# Docker
+# ==========================================
+# DO NOT ignore docker-compose.yml or Dockerfiles
+# Docker volumes are usually ignored:
+*.pid
+
+# ==========================================
+# Local database files
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# Misc
+# ==========================================
+.DockerDesktop/

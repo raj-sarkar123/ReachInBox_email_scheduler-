@@ -1,0 +1,29 @@
+{
+  "name": "reachinbox-email-scheduler-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:backend": "npm run dev --workspace=reachinbox-backend",
+    "dev:frontend": "npm run dev --workspace=reachinbox-frontend",
+    "build": "npm run build --workspaces",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate --workspace=reachinbox-backend",
+    "db:seed": "npm run prisma:seed --workspace=reachinbox-backend"
+  },
+  "keywords": [
+    "reachinbox",
+    "email-scheduler",
+    "bullmq",
+    "redis",
+    "postgresql",
+    "elasticsearch",
+    "slack"
+  ],
+  "author": "",
+  "license": "ISC"
+}

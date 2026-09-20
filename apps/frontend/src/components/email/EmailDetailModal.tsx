@@ -1,28 +1,38 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { format } from 'date-fns';
-import { ArrowLeft, Star, Trash2, MoreVertical, ExternalLink} from 'lucide-react';
-import { Email } from '../../types';
-import { Badge } from '../common/Badge';
+import React from "react";
+import { format } from "date-fns";
+import {
+  ArrowLeft,
+  Star,
+  Trash2,
+  MoreVertical,
+  ExternalLink,
+} from "lucide-react";
+import { Email } from "../../types";
+import { Badge } from "../common/Badge";
 
 interface EmailDetailModalProps {
   email: Email | null;
   isOpen: boolean;
   onClose: () => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
 export const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
   email,
   isOpen,
   onClose,
+  onDelete,
 }) => {
   if (!isOpen || !email) return null;
 
+  console.log('onDelete is:', typeof onDelete); // ← add this temporarily
+
   const formattedDate = (dateStr?: string | null) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     try {
-      return format(new Date(dateStr), 'MMM d, h:mm a');
+      return format(new Date(dateStr), "MMM d, h:mm a");
     } catch {
       return dateStr;
     }
@@ -49,11 +59,15 @@ export const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
             <button className="p-1.5 text-gray-400 hover:text-amber-500 rounded-lg hover:bg-gray-100 transition-colors">
               <Star className="w-4 h-4" />
             </button>
-            <button className="p-1.5 text-gray-400 hover:text-rose-500 rounded-lg hover:bg-gray-100 transition-colors">
+            <button
+              onClick={async () => {
+                if (!confirm("Delete this email permanently?")) return;
+                await onDelete(email.id);
+                onClose();
+              }}
+              className="p-1.5 text-gray-400 hover:text-rose-500 rounded-lg hover:bg-gray-100 transition-colors"
+            >
               <Trash2 className="w-4 h-4" />
-            </button>
-            <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -62,19 +76,24 @@ export const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
         <div className="px-8 py-5 border-b border-gray-100 flex items-start justify-between bg-gray-50/40">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-sm shadow-sm">
-              {email.sender?.name ? email.sender.name.charAt(0).toUpperCase() : 'S'}
+              {email.sender?.name
+                ? email.sender.name.charAt(0).toUpperCase()
+                : "S"}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-gray-900 text-sm">
-                  {email.sender?.name || 'Sender'}
+                  {email.sender?.name || "Sender"}
                 </span>
                 <span className="text-xs text-gray-500">
-                  &lt;{email.sender?.email || 'sender@domain.com'}&gt;
+                  &lt;{email.sender?.email || "sender@domain.com"}&gt;
                 </span>
               </div>
               <div className="text-xs text-gray-500 mt-0.5">
-                to <span className="text-gray-700 font-medium">{email.recipient}</span>
+                to{" "}
+                <span className="text-gray-700 font-medium">
+                  {email.recipient}
+                </span>
               </div>
             </div>
           </div>
@@ -111,13 +130,14 @@ export const EmailDetailModal: React.FC<EmailDetailModalProps> = ({
           </div>
 
           {/* Attachments Section (Figma p.9 style) */}
-          
         </div>
 
         {/* 4. Footer Actions (Ethereal Web Link) */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
           <div className="text-xs text-gray-500">
-            {email.sentAt ? `Delivered at: ${formattedDate(email.sentAt)}` : `Scheduled for: ${formattedDate(email.scheduledAt)}`}
+            {email.sentAt
+              ? `Delivered at: ${formattedDate(email.sentAt)}`
+              : `Scheduled for: ${formattedDate(email.scheduledAt)}`}
           </div>
 
           <div className="flex items-center gap-3">

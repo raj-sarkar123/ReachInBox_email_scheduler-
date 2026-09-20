@@ -1,4 +1,4 @@
-import { Worker, Job } from 'bullmq';
+import { Worker, Job , DelayedError} from 'bullmq';
 import { redisConnection } from '../queues/redis.js';
 import { EMAIL_QUEUE_NAME } from '../queues/email.queue.js';
 import { EmailJobData } from '../types/index.js';
@@ -26,10 +26,11 @@ export function startEmailWorker(): Worker<EmailJobData> {
       });
 
       // 1. Fetch Email and Sender record from PostgreSQL
-      const emailRecord = await prisma.email.findUnique({
-        where: { id: emailId },
-        include: { sender: true },
-      });
+      // 1. Fetch Email, Sender, and Campaign record from PostgreSQL
+const emailRecord = await prisma.email.findUnique({
+  where: { id: emailId },
+  include: { sender: true, campaign: true },   // <-- also load campaign
+});
 
       if (!emailRecord) {
         logger.warn('⚠️ Email record not found in database, discarding job', { emailId });
@@ -52,8 +53,13 @@ export function startEmailWorker(): Worker<EmailJobData> {
       });
 
       // 4. DISTRIBUTED RATE LIMIT CHECK (Redis Atomic Lua)
-      const hourlyLimit = emailRecord.sender.hourlyLimit || config.scheduler.maxEmailsPerHourPerSender;
-      const rateLimitResult = await rateLimitService.checkAndIncrement(senderId, hourlyLimit);
+      // 4. DISTRIBUTED RATE LIMIT CHECK (Redis Atomic Lua)
+// Prefer the per-campaign override the user set in Compose, then the sender default, then global config
+const hourlyLimit =
+  emailRecord.campaign?.hourlyLimit ??
+  emailRecord.sender.hourlyLimit ??
+  config.scheduler.maxEmailsPerHourPerSender;
+const rateLimitResult = await rateLimitService.checkAndIncrement(senderId, hourlyLimit);
 
       if (!rateLimitResult.allowed) {
         const rescheduledTime = rateLimitResult.rescheduledTime || new Date(Date.now() + 3600000);
@@ -85,12 +91,17 @@ export function startEmailWorker(): Worker<EmailJobData> {
         });
 
         // Move job back to delayed state in BullMQ
+                // Move job back to delayed state in BullMQ
         await job.moveToDelayed(Date.now() + delayMs, job.token);
-        return;
+        throw new DelayedError(); // tells BullMQ this is an intentional delay, not a failure
       }
 
       // 5. INTER-EMAIL DELAY (Enforce minimum delay to mimic provider throttling)
-      const minDelaySeconds = emailRecord.sender.delaySeconds || config.scheduler.emailMinDelaySeconds;
+      // 5. INTER-EMAIL DELAY (Enforce minimum delay to mimic provider throttling)
+const minDelaySeconds =
+  emailRecord.campaign?.delaySeconds ??
+  emailRecord.sender.delaySeconds ??
+  config.scheduler.emailMinDelaySeconds;
       if (minDelaySeconds > 0) {
         await new Promise((resolve) => setTimeout(resolve, minDelaySeconds * 1000));
       }

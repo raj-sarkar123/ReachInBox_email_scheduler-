@@ -37,12 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
           {isSearching ? (
             <div className="absolute right-3 w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
           ) : (
-            <button
-              className="absolute right-2.5 p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200/50"
-              title="Search filters"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-            </button>
+           <></>
           )}
         </div>
       </div>

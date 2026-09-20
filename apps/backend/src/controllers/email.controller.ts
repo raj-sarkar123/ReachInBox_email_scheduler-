@@ -63,7 +63,14 @@ export const emailController = {
       res.status(500).json({ success: false, error: err.message });
     }
   },
-
+deleteEmail: async (req: Request, res: Response) => {
+  try {
+    await emailDataService.deleteEmail(req.params.id, req.user!.id);
+    res.json({ success: true, message: 'Email deleted' });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+},
   getCounts: async (req: Request, res: Response) => {
     try {
       const counts = await emailDataService.getCounts(req.user!.id);

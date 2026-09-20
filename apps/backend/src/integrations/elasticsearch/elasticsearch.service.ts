@@ -87,7 +87,27 @@ class ElasticsearchService {
       logger.error('❌ Failed to index email into Elasticsearch:', { id: doc.id, error: err.message });
     }
   }
+async deleteEmail(id: string): Promise<void> {
+  try {
+    if (!this.isAvailable) {
+      return;
+    }
 
+    await this.client.delete({
+      index: config.elasticsearch.index,
+      id,
+    });
+    logger.debug('Removed email from Elasticsearch', { id });
+  } catch (err: any) {
+    // 404 means the doc was never indexed (or already deleted) — not a real failure
+    if (err.meta?.statusCode === 404) {
+      logger.debug('Email not found in Elasticsearch index (already removed or never indexed)', { id });
+      return;
+    }
+    logger.error('❌ Failed to delete email from Elasticsearch:', { id, error: err.message });
+    throw err; // let the caller's try/catch in email.service.ts log/swallow it too
+  }
+}
   async searchEmails(params: {
     userId: string;
     query?: string;

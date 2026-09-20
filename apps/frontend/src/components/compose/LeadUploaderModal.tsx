@@ -34,22 +34,31 @@ export const LeadUploaderModal: React.FC<LeadUploaderModalProps> = ({
     setDetectedEmails(unique);
   };
 
-  const handleFileUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = (e.target?.result as string) || '';
-      processText(text, file.name);
-    };
-    reader.readAsText(file);
-  };
+ const [fileError, setFileError] = useState<string | null>(null);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
-    }
+const isSupportedFile = (file: File) => /\.(csv|txt)$/i.test(file.name);
+
+const handleFileUpload = (file: File) => {
+  setFileError(null);
+  if (!isSupportedFile(file)) {
+    setFileError(`"${file.name}" isn't a supported format. Please upload a .csv or .txt file (Excel .xlsx is not supported).`);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = (e.target?.result as string) || '';
+    processText(text, file.name);
   };
+  reader.readAsText(file);
+};
+
+const handleDrop = (e: React.DragEvent) => {
+  e.preventDefault();
+  setDragActive(false);
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    handleFileUpload(e.dataTransfer.files[0]); // now validated inside handleFileUpload
+  }
+};
 
   const handleDone = () => {
     if (detectedEmails.length > 0) {

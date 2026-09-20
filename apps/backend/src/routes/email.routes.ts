@@ -11,5 +11,5 @@ router.get('/sent', emailController.getSentEmails);
 router.get('/search', emailController.searchEmails);
 router.get('/counts', emailController.getCounts);
 router.get('/:id', emailController.getEmailById);
-
+router.delete('/:id', emailController.deleteEmail);
 export default router;

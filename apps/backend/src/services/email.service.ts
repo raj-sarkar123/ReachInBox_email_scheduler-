@@ -2,7 +2,7 @@ import { prisma } from '../config/prisma.js';
 import { elasticsearchService } from '../integrations/elasticsearch/elasticsearch.service.js';
 import { EmailStatus } from '../types/index.js';
 import { logger } from '../utils/logger.js';
-
+import { emailQueue } from '../queues/email.queue.js';
 export class EmailService {
   async getScheduledEmails(userId: string, limit = 100, offset = 0) {
     return prisma.email.findMany({
@@ -16,7 +16,31 @@ export class EmailService {
       skip: offset,
     });
   }
+async deleteEmail(emailId: string, userId: string) {
+  const email = await prisma.email.findFirst({ where: { id: emailId, userId } });
+  if (!email) throw new Error('Email not found');
 
+  // Best-effort cancel of BullMQ job — never let this block the delete
+  if (email.bullmqJobId && ['SCHEDULED', 'PROCESSING', 'RATE_LIMITED_RESCHEDULED'].includes(email.status)) {
+    try {
+      const job = await emailQueue.getJob(email.bullmqJobId);
+      if (job) await job.remove();
+    } catch (err: any) {
+      logger.warn(`Could not remove BullMQ job ${email.bullmqJobId} for email ${emailId}: ${err.message}`);
+      // Continue — job may already be running/locked; deleting the record is still valid
+    }
+  }
+
+  await prisma.email.delete({ where: { id: emailId } });
+
+  // Best-effort ES cleanup — don't fail the whole request if this errors
+  try {
+    await elasticsearchService.deleteEmail(emailId);
+  } catch (err: any) {
+    logger.error(`Failed to remove email ${emailId} from Elasticsearch: ${err.message}`);
+    // Consider a background reconciliation job/cron to catch these stragglers
+  }
+}
   async getSentEmails(userId: string, limit = 100, offset = 0) {
     return prisma.email.findMany({
       where: {

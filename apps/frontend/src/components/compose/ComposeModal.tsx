@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   ArrowLeft,
   Paperclip,
@@ -20,15 +20,13 @@ import {
   ListOrdered,
   Quote,
   Link as LinkIcon,
-  Image as ImageIcon,
   Trash2,
   Calendar,
-  Check,
-} from 'lucide-react';
-import { Sender } from '../../types';
-import { LeadUploaderModal } from './LeadUploaderModal';
-import { AddSenderModal } from './AddSenderModal';
-import { Button } from '../common/Button';
+} from "lucide-react";
+import { Sender } from "../../types";
+import { LeadUploaderModal } from "./LeadUploaderModal";
+import { AddSenderModal } from "./AddSenderModal";
+import { Button } from "../common/Button";
 
 interface ComposeModalProps {
   isOpen: boolean;
@@ -53,17 +51,17 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({
   onSenderCreated,
   onSchedule,
 }) => {
-  const [senderId, setSenderId] = useState<string>(senders[0]?.id || '');
-  const [recipientInput, setRecipientInput] = useState<string>('');
+  const [senderId, setSenderId] = useState<string>(senders[0]?.id || "");
+  const [recipientInput, setRecipientInput] = useState<string>("");
   const [recipients, setRecipients] = useState<string[]>([]);
-  const [subject, setSubject] = useState<string>('');
-  const [body, setBody] = useState<string>('');
+  const [subject, setSubject] = useState<string>("");
+  const [body, setBody] = useState<string>("");
   const [delaySeconds, setDelaySeconds] = useState<number>(2);
   const [hourlyLimit, setHourlyLimit] = useState<number>(100);
 
   // Send Later Flyout state
   const [showSendLater, setShowSendLater] = useState<boolean>(false);
-  const [scheduledDateTime, setScheduledDateTime] = useState<string>('');
+  const [scheduledDateTime, setScheduledDateTime] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Lead uploader modal state
@@ -71,6 +69,13 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({
 
   // Add sender modal state (multi-sender support)
   const [showAddSender, setShowAddSender] = useState<boolean>(false);
+
+  // Rich text editor ref — MUST stay above the `if (!isOpen) return null;` guard
+  // below. Every hook in a component has to run on every render regardless of
+  // any early return; declaring it after the guard meant this hook only ran
+  // when the modal was open, so the hook count differed between renders and
+  // React threw "Rendered more hooks than during the previous render."
+  const editorRef = React.useRef<HTMLDivElement>(null);
 
   // Keep the selected sender valid as the senders list loads/changes (e.g. after
   // the async dashboard fetch resolves, or right after a new sender is created).
@@ -93,17 +98,17 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({
 
   // Add recipient chip on Enter or Comma
   const handleRecipientKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
+    if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       addRecipient(recipientInput);
     }
   };
 
   const addRecipient = (raw: string) => {
-    const trimmed = raw.trim().replace(/,$/, '').toLowerCase();
+    const trimmed = raw.trim().replace(/,$/, "").toLowerCase();
     if (trimmed && !recipients.includes(trimmed)) {
       setRecipients([...recipients, trimmed]);
-      setRecipientInput('');
+      setRecipientInput("");
     }
   };
 
@@ -115,30 +120,33 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({
     const combined = Array.from(new Set([...recipients, ...importedEmails]));
     setRecipients(combined);
   };
-const resetComposeForm = () => {
-  setRecipientInput('');
-  setRecipients([]);
-  setSubject('');
-  setBody('');
-  setDelaySeconds(2);
-  setHourlyLimit(100);
-  setScheduledDateTime('');
-  setShowSendLater(false);
-  setShowUploader(false);
-  setShowAddSender(false);
 
-  if (senders.length > 0) {
-    setSenderId(senders[0].id);
-  }
-};
+  const resetComposeForm = () => {
+    setRecipientInput("");
+    setRecipients([]);
+    setSubject("");
+    setBody("");
+    setDelaySeconds(2);
+    setHourlyLimit(100);
+    setScheduledDateTime("");
+    setShowSendLater(false);
+    setShowUploader(false);
+    setShowAddSender(false);
+    if (editorRef.current) editorRef.current.innerHTML = "";
+
+    if (senders.length > 0) {
+      setSenderId(senders[0].id);
+    }
+  };
+
   // Schedule action
   const handleScheduleSubmit = async (customStartTime?: string) => {
     if (recipients.length === 0) {
-      alert('Please provide at least one recipient email address.');
+      alert("Please provide at least one recipient email address.");
       return;
     }
     if (!subject.trim()) {
-      alert('Please provide an email subject.');
+      alert("Please provide an email subject.");
       return;
     }
 
@@ -147,18 +155,19 @@ const resetComposeForm = () => {
       await onSchedule({
         senderId: senderId || senders[0]?.id,
         subject,
-        body: body || '<p></p>',
+        body: body || "<p></p>",
         recipients,
-        startTime: customStartTime || scheduledDateTime
-  ? new Date(customStartTime || scheduledDateTime).toISOString()
-  : undefined,
+        startTime:
+          customStartTime || scheduledDateTime
+            ? new Date(customStartTime || scheduledDateTime).toISOString()
+            : undefined,
         delaySeconds,
         hourlyLimit,
       });
       resetComposeForm();
       onClose();
     } catch (err: any) {
-      console.error('Schedule failed:', err);
+      console.error("Schedule failed:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,6 +189,12 @@ const resetComposeForm = () => {
     setScheduledDateTime(isoStr);
   };
 
+  const exec = (command: string, value?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    setBody(editorRef.current?.innerHTML || "");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden relative animate-scale-up">
@@ -192,7 +207,9 @@ const resetComposeForm = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h2 className="text-base font-semibold text-gray-900">Compose New Email</h2>
+            <h2 className="text-base font-semibold text-gray-900">
+              Compose New Email
+            </h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -208,7 +225,9 @@ const resetComposeForm = () => {
               type="button"
               onClick={() => setShowSendLater(!showSendLater)}
               className={`p-1.5 rounded-lg transition-colors ${
-                showSendLater ? 'text-emerald-700 bg-emerald-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                showSendLater
+                  ? "text-emerald-700 bg-emerald-50"
+                  : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               }`}
               title="Schedule send time"
             >
@@ -217,15 +236,15 @@ const resetComposeForm = () => {
 
             <Button
               onClick={() =>
-  scheduledDateTime
-    ? handleScheduleSubmit()
-    : setShowSendLater(true)
-}
+                scheduledDateTime
+                  ? handleScheduleSubmit()
+                  : setShowSendLater(true)
+              }
               loading={isSubmitting}
               className="rounded-full px-5 py-2 text-xs font-semibold"
               icon={<Send className="w-3.5 h-3.5" />}
             >
-              {scheduledDateTime ? 'Schedule Send' : 'Send Later'}
+              {scheduledDateTime ? "Schedule Send" : "Send Later"}
             </Button>
           </div>
         </div>
@@ -236,7 +255,9 @@ const resetComposeForm = () => {
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* From Sender */}
             <div className="flex items-center border-b border-gray-100 pb-3">
-              <span className="w-16 text-xs font-semibold text-gray-500">From</span>
+              <span className="w-16 text-xs font-semibold text-gray-500">
+                From
+              </span>
               <select
                 value={senderId}
                 onChange={(e) => setSenderId(e.target.value)}
@@ -244,7 +265,7 @@ const resetComposeForm = () => {
               >
                 {senders.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.email} ({s.name}) · {s.hourlyLimit}/hr
+                    {s.email} ({s.name}) · default {s.hourlyLimit}/hr
                   </option>
                 ))}
               </select>
@@ -261,7 +282,9 @@ const resetComposeForm = () => {
             {/* To Recipients + Chips + Upload List Link */}
             <div className="border-b border-gray-100 pb-3">
               <div className="flex items-start justify-between">
-                <span className="w-16 text-xs font-semibold text-gray-500 pt-1.5">To</span>
+                <span className="w-16 text-xs font-semibold text-gray-500 pt-1.5">
+                  To
+                </span>
                 <div className="flex-1 flex flex-wrap items-center gap-1.5">
                   {recipients.map((rec, idx) => (
                     <span
@@ -283,8 +306,14 @@ const resetComposeForm = () => {
                     value={recipientInput}
                     onChange={(e) => setRecipientInput(e.target.value)}
                     onKeyDown={handleRecipientKeyDown}
-                    onBlur={() => recipientInput && addRecipient(recipientInput)}
-                    placeholder={recipients.length === 0 ? 'Type email and press Enter...' : 'Add more...'}
+                    onBlur={() =>
+                      recipientInput && addRecipient(recipientInput)
+                    }
+                    placeholder={
+                      recipients.length === 0
+                        ? "Type email and press Enter..."
+                        : "Add more..."
+                    }
                     className="flex-1 min-w-[140px] text-sm text-gray-800 bg-transparent focus:outline-none py-1"
                   />
                 </div>
@@ -303,7 +332,9 @@ const resetComposeForm = () => {
 
             {/* Subject Input */}
             <div className="flex items-center border-b border-gray-100 pb-3">
-              <span className="w-16 text-xs font-semibold text-gray-500">Subject</span>
+              <span className="w-16 text-xs font-semibold text-gray-500">
+                Subject
+              </span>
               <input
                 type="text"
                 value={subject}
@@ -316,13 +347,15 @@ const resetComposeForm = () => {
             {/* Rate & Delay Inputs (Figma style) */}
             <div className="flex flex-wrap items-center gap-6 py-1 border-b border-gray-100 text-xs text-gray-600">
               <div className="flex items-center gap-2">
-                <span>Delay between 2 emails</span>
+                <span>Delay Between Sends</span>
                 <input
                   type="number"
                   min="0"
                   max="3600"
                   value={delaySeconds}
-                  onChange={(e) => setDelaySeconds(parseInt(e.target.value, 10) || 0)}
+                  onChange={(e) =>
+                    setDelaySeconds(parseInt(e.target.value, 10) || 0)
+                  }
                   className="w-14 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-center font-medium focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                 />
                 <span>sec</span>
@@ -335,69 +368,127 @@ const resetComposeForm = () => {
                   min="1"
                   max="5000"
                   value={hourlyLimit}
-                  onChange={(e) => setHourlyLimit(parseInt(e.target.value, 10) || 1)}
+                  onChange={(e) =>
+                    setHourlyLimit(parseInt(e.target.value, 10) || 1)
+                  }
                   className="w-14 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-center font-medium focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                 />
                 <span>emails/hr</span>
               </div>
+              <p className="text-[10px] text-gray-400 basis-full -mt-1">
+                Overrides the sender&apos;s default for this campaign only
+              </p>
             </div>
 
             {/* Rich Text Editor Toolbar (Figma style) */}
             <div className="flex flex-wrap items-center gap-1 p-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-xs">
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
+              <button
+                type="button"
+                onClick={() => exec("bold")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
                 <Bold className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <Italic className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <Underline className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <Strikethrough className="w-3.5 h-3.5" />
-              </button>
-              <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <AlignLeft className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <AlignCenter className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <AlignRight className="w-3.5 h-3.5" />
-              </button>
-              <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <List className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <ListOrdered className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <Quote className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <LinkIcon className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" className="p-1 hover:bg-gray-200 rounded">
-                <ImageIcon className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
-                onClick={() => setBody('')}
+                onClick={() => exec("italic")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <Italic className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("underline")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <Underline className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("strikeThrough")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <Strikethrough className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+              <button
+                type="button"
+                onClick={() => exec("justifyLeft")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <AlignLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("justifyCenter")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <AlignCenter className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("justifyRight")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <AlignRight className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+              <button
+                type="button"
+                onClick={() => exec("insertUnorderedList")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("insertOrderedList")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <ListOrdered className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("formatBlock", "<blockquote>")}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <Quote className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = window.prompt("Enter URL");
+                  if (url) exec("createLink", url);
+                }}
+                className="p-1 hover:bg-gray-200 rounded"
+              >
+                <LinkIcon className="w-3.5 h-3.5" />
+              </button>
+              {/* Image button removed — no upload/hosting backend exists; keeping it would be another dead button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setBody("");
+                  if (editorRef.current) editorRef.current.innerHTML = "";
+                }}
                 className="p-1 hover:bg-gray-200 rounded ml-auto text-gray-400 hover:text-rose-500"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Email Body Editor */}
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Type your email body here (HTML or plain text)..."
-              rows={12}
-              className="w-full p-4 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-sans leading-relaxed"
+            {/* Email Body Editor — single contentEditable rich-text surface.
+                (The original file also rendered a plain <textarea> bound to the
+                same `body` state right below this; that duplicate has been
+                removed since two inputs writing to one state field meant
+                typing in either one didn't reliably reflect in the other.) */}
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setBody((e.target as HTMLDivElement).innerHTML)}
+              data-placeholder="Type your email body here..."
+              className="w-full min-h-[240px] p-4 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-sans leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
             />
           </div>
 
@@ -474,7 +565,7 @@ const resetComposeForm = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setScheduledDateTime('');
+                    setScheduledDateTime("");
                     setShowSendLater(false);
                   }}
                   className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-200 rounded-lg"

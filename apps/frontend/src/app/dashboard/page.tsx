@@ -1,7 +1,6 @@
 'use client';
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';   // add useSearchParams
 import { RefreshCw, Inbox, Send, Clock, Plus, AlertTriangle } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -17,6 +16,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading, logout } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [currentTab, setCurrentTab] = useState<'scheduled' | 'sent'>('scheduled');
   const [scheduledEmails, setScheduledEmails] = useState<Email[]>([]);
@@ -34,7 +34,6 @@ export default function DashboardPage() {
   // Modals state
   const [isComposeOpen, setIsComposeOpen] = useState<boolean>(false);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
-
   // Fetch all initial data
   const fetchData = useCallback(async () => {
     try {
@@ -73,6 +72,19 @@ export default function DashboardPage() {
     const interval = setInterval(fetchData, 4000);
     return () => clearInterval(interval);
   }, [fetchData]);
+ useEffect(() => {
+    const slackSuccess = searchParams.get('slack_success');
+    const slackError = searchParams.get('slack_error');
+
+    if (slackSuccess) {
+      showToast('Slack connected successfully', 'success');
+      fetchData(); // refresh slackStatus immediately instead of waiting for the poll
+      router.replace('/dashboard');
+    } else if (slackError) {
+      showToast(`Slack connection failed: ${decodeURIComponent(slackError)}`, 'error');
+      router.replace('/dashboard');
+    }
+  }, [searchParams]);
 
   // Elasticsearch Search Debouncer
   useEffect(() => {
@@ -122,7 +134,15 @@ export default function DashboardPage() {
       showToast('Failed to disconnect Slack', 'error');
     }
   };
-
+const handleDeleteEmail = async (id: string) => {
+  try {
+    await api.delete(`/emails/${id}`);
+    showToast('Email deleted', 'success');
+    fetchData();
+  } catch (err: any) {
+    showToast('Failed to delete email', 'error');
+  }
+};
   // Handle Campaign Scheduling
   const handleScheduleCampaign = async (campaignData: any) => {
     try {
@@ -270,11 +290,7 @@ export default function DashboardPage() {
       />
 
       {/* Email Detail Modal */}
-      <EmailDetailModal
-        email={selectedEmail}
-        isOpen={selectedEmail !== null}
-        onClose={() => setSelectedEmail(null)}
-      />
+      <EmailDetailModal email={selectedEmail} isOpen={selectedEmail !== null} onClose={() => setSelectedEmail(null)} onDelete={handleDeleteEmail} />
     </div>
   );
 }

@@ -78,12 +78,7 @@ export const EmailRow: React.FC<EmailRowProps> = ({ email, tab, onClick }) => {
           </a>
         )}
 
-        <button
-          onClick={(e) => e.stopPropagation()}
-          className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100 transition-colors"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
+        
       </div>
     </div>
   );

@@ -23,11 +23,12 @@ export const config = {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
 
-  elasticsearch: {
-    url: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
-    index: 'emails',
-  },
-
+ elasticsearch: {
+  url: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
+  username: process.env.ELASTICSEARCH_USERNAME || '',
+  password: process.env.ELASTICSEARCH_PASSWORD || '',
+  index: 'emails',
+},
   jwt: {
     secret: process.env.JWT_SECRET || 'reachinbox-scheduler-jwt-secret-2025',
     expiresIn: '7d',

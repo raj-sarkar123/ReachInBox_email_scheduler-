@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';   // add useSearchParams
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RefreshCw, Inbox, Send, Clock, Plus, AlertTriangle } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -11,8 +11,7 @@ import { EmailRow } from '../../components/email/EmailRow';
 import { EmailDetailModal } from '../../components/email/EmailDetailModal';
 import { ComposeModal } from '../../components/compose/ComposeModal';
 import { Email, Sender, SlackStatus } from '../../types';
-
-export default function DashboardPage() {
+function DashboardContent() {
   const { user, loading: authLoading, logout } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
@@ -292,5 +291,21 @@ const handleDeleteEmail = async (id: string) => {
       {/* Email Detail Modal */}
       <EmailDetailModal email={selectedEmail} isOpen={selectedEmail !== null} onClose={() => setSelectedEmail(null)} onDelete={handleDeleteEmail} />
     </div>
+  );
+}
+ 
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-[#F9FAFB]">
+          <div className="text-sm text-gray-500">
+            Loading dashboard...
+          </div>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }

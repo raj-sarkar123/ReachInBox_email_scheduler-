@@ -20,21 +20,17 @@ class ElasticsearchService {
   private isAvailable = false;
 
   constructor() {
-    this.client = new Client({
-      node: config.elasticsearch.url,
+  this.client = new Client({
+    node: config.elasticsearch.url,
 
-      auth:
-        config.elasticsearch.username && config.elasticsearch.password
-          ? {
-              username: config.elasticsearch.username,
-              password: config.elasticsearch.password,
-            }
-          : undefined,
+    auth: {
+      apiKey: config.elasticsearch.apiKey,
+    },
 
-      requestTimeout: 10000,
-      maxRetries: 3,
-    });
-  }
+    requestTimeout: 10000,
+    maxRetries: 3,
+  });
+}
 
   async initIndex(): Promise<void> {
     try {

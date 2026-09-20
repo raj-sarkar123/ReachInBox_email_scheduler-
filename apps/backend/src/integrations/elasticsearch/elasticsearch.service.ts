@@ -120,6 +120,9 @@ class ElasticsearchService {
         '⚠️ Elasticsearch initialization failed. Falling back to database search.',
         {
           error: err?.message || String(err),
+          statusCode: err?.meta?.statusCode,
+          body: err?.meta?.body,
+          node: config.elasticsearch.url.replace(/\/\/.*@/, '//***@'),
         }
       );
     }

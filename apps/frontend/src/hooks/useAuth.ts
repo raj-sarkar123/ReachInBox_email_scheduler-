@@ -36,7 +36,7 @@ export function useAuth() {
   };
 
   const loginWithGoogle = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api'}/auth/google`;
+    window.location.href = `${process.env.BACKEND_URL || 'http://localhost:5000/api'}/auth/google`;
   };
 
   const loginDemo = async () => {
